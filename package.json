@@ -55,6 +55,7 @@
     "grunt-angular-templates": "^0.5.4",
     "grunt-asset-injector": "^0.1.0",
     "grunt-autoprefixer": "~0.7.2",
+    "grunt-cli": "^1.5.0",
     "grunt-concurrent": "~0.5.0",
     "grunt-contrib-clean": "~0.5.0",
     "grunt-contrib-concat": "~0.4.0",
@@ -92,9 +93,9 @@
   "scripts": {
     "start": "ts-node server/app.ts",
     "lint": "eslint --ext .ts .",
-    "build": "grunt build",
-    "test": "grunt test",
-    "dev": "grunt serve",
+    "build": "node node_modules/grunt-cli/bin/grunt build",
+    "test": "node node_modules/grunt-cli/bin/grunt test",
+    "dev": "node node_modules/grunt-cli/bin/grunt serve",
     "tsc": "tsc --noEmit --skipLibCheck"
   },
   "private": true,

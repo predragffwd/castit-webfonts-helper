@@ -1,5 +1,5 @@
 import * as express from "express";
-import { getApiFonts, getApiFontsById } from "./api/fonts.controller";
+import { getApiFonts, getApiFontsById, downloadFontLocally, serveLocalFont, getLocalFonts } from "./api/fonts.controller";
 import { getHealthy } from "./api/healthy.controller";
 
 export function setupRoutes(app: express.Express) {
@@ -9,7 +9,16 @@ export function setupRoutes(app: express.Express) {
 
   app.route("/api/fonts").get(getApiFonts);
 
+  // Get list of locally downloaded fonts
+  app.route("/api/fonts/local").get(getLocalFonts);
+
   app.route("/api/fonts/:id").get(getApiFontsById);
+
+  // Download font locally
+  app.route("/api/fonts/:id/download").post(downloadFontLocally);
+
+  // Serve local font files
+  app.route("/api/fonts/:id/local/:hash/:file").get(serveLocalFont);
 
   app.route("/-/healthy").get(getHealthy);
 

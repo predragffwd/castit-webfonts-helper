@@ -27,6 +27,10 @@ const init = (async () => {
   // http://expressjs.com/en/api.html
   app.set("x-powered-by", false);
 
+  // Parse JSON request bodies
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
   if (config.ENABLE_MIDDLEWARE_COMPRESSION) {
     app.use(require("compression")());
   }
