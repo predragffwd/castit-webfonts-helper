@@ -4,7 +4,6 @@ import * as JSZip from "jszip";
 import * as _ from "lodash";
 import * as path from "path";
 import * as https from "https";
-import * as crypto from "crypto";
 import { IUserAgents } from "../config";
 import { loadFontBundle, loadFontItems, loadFontSubsetArchive, loadSubsetMap, loadVariantItems } from "../logic/core";
 import { IFontSubsetArchive } from "../logic/fetchFontSubsetArchive";
@@ -212,7 +211,6 @@ interface IDownloadFontResponse {
   subsets: string[];
   variants: string[];
   formats: string[];
-  hash: string; // unique identifier for this font configuration
   downloadedAt: string;
 }
 
@@ -239,14 +237,8 @@ export async function downloadFontLocally(
       return res.status(404).send("Variants not found");
     }
 
-    // Generate a hash for this specific configuration
-    const configHash = crypto
-      .createHash("md5")
-      .update(`${fontId}-${subsets?.join(",")}-${variants?.join(",")}-${formats?.join(",")}`)
-      .digest("hex");
-
-    // Create directory structure: fonts/{fontId}/{configHash}
-    const localFontDir = path.join(process.cwd(), "fonts", fontId, configHash);
+    // Create directory structure: fonts/{fontId}
+    const localFontDir = path.join(process.cwd(), "fonts", fontId);
     
     if (!fs.existsSync(localFontDir)) {
       fs.mkdirSync(localFontDir, { recursive: true });
@@ -280,19 +272,18 @@ export async function downloadFontLocally(
 
     await Promise.all(downloadPromises);
 
-    // Generate CSS file
-    const cssContent = generateFontFaceCSS(filteredVariants, configHash, fontBundle.font.family, formats);
-    const cssPath = path.join(localFontDir, "fonts.css");
-    fs.writeFileSync(cssPath, cssContent);
+    // // Generate CSS file
+    // const cssContent = generateFontFaceCSS(filteredVariants, fontBundle.font.family, formats);
+    // const cssPath = path.join(localFontDir, "fonts.css");
+    // fs.writeFileSync(cssPath, cssContent);
 
     const response: IDownloadFontResponse = {
       id: fontId,
       family: fontBundle.font.family,
-      localPath: `/api/fonts/${fontId}/local/${configHash}`,
+      localPath: `/api/fonts/${fontId}/local`,
       subsets: fontBundle.subsets,
       variants: _.map(filteredVariants, (v) => v.id),
       formats: formats || ["woff2", "woff"],
-      hash: configHash,
       downloadedAt: new Date().toISOString(),
     };
 
@@ -303,15 +294,15 @@ export async function downloadFontLocally(
 }
 
 // Serve local fonts
-// GET /api/fonts/:id/local/:hash/:file
+// GET /api/fonts/:id/local/:file
 export async function serveLocalFont(
-  req: Request<{ id: string; hash: string; file: string }>,
+  req: Request<{ id: string; file: string }>,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const { id, hash, file } = req.params;
-    const filePath = path.join(process.cwd(), "fonts", id, hash, file);
+    const { id, file } = req.params;
+    const filePath = path.join(process.cwd(), "fonts", id, file);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).send("File not found");
@@ -374,7 +365,6 @@ function downloadFile(url: string, filePath: string): Promise<void> {
 // Helper function to generate CSS with @font-face rules
 function generateFontFaceCSS(
   variants: IVariantItem[],
-  configHash: string,
   fontFamily: string,
   formats: string[] | null
 ): string {
@@ -414,7 +404,6 @@ function generateFontFaceCSS(
 interface ILocalFont {
   id: string;
   family: string;
-  hash: string;
   subsets: string[];
   variants: string[];
   path: string;
@@ -439,37 +428,25 @@ export async function getLocalFonts(req: Request, res: Response<ILocalFont[]>, n
         continue;
       }
 
-      const hashDirs = fs.readdirSync(fontPath);
+      const files = fs.readdirSync(fontPath);
+      
+      const fontFiles = _.filter(files, (f) => 
+        f.endsWith(".woff") || f.endsWith(".woff2") || f.endsWith(".ttf") || f.endsWith(".eot") || f.endsWith(".svg")
+      );
 
-      for (const hash of hashDirs) {
-        const configPath = path.join(fontPath, hash);
-        const configStat = fs.statSync(configPath);
-        
-        if (!configStat.isDirectory()) {
-          continue;
-        }
+      const variants = _.uniq(_.map(fontFiles, (f) => f.split(".")[0]));
 
-        const files = fs.readdirSync(configPath);
-        
-        const fontFiles = _.filter(files, (f) => 
-          f.endsWith(".woff") || f.endsWith(".woff2") || f.endsWith(".ttf") || f.endsWith(".eot") || f.endsWith(".svg")
-        );
+      // Try to get font family from the font items
+      const fonts = loadFontItems();
+      const fontItem = _.find(fonts, { id: fontId });
 
-        const variants = _.uniq(_.map(fontFiles, (f) => f.split(".")[0]));
-
-        // Try to get font family from the font items
-        const fonts = loadFontItems();
-        const fontItem = _.find(fonts, { id: fontId });
-
-        localFonts.push({
-          id: fontId,
-          family: fontItem?.family || fontId,
-          hash,
-          subsets: fontItem?.subsets || [],
-          variants,
-          path: `/api/fonts/${fontId}/local/${hash}`,
-        });
-      }
+      localFonts.push({
+        id: fontId,
+        family: fontItem?.family || fontId,
+        subsets: fontItem?.subsets || [],
+        variants,
+        path: `/api/fonts/${fontId}/local`,
+      });
     }
 
     return res.json(localFonts);

@@ -18,7 +18,7 @@ export function setupRoutes(app: express.Express) {
   app.route("/api/fonts/:id/download").post(downloadFontLocally);
 
   // Serve local font files
-  app.route("/api/fonts/:id/local/:hash/:file").get(serveLocalFont);
+  app.route("/api/fonts/:id/local/:file").get(serveLocalFont);
 
   app.route("/-/healthy").get(getHealthy);
 
