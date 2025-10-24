@@ -1,3 +1,7 @@
+export interface ISubsetMap {
+  [subset: string]: boolean;
+}
+
 export interface IUserAgents {
   eot: string;
   woff: string;
@@ -131,4 +135,13 @@ export interface IGoogleFontsResItem {
   };
   category: string;
   kind: "webfonts#webfont";
+}
+
+export interface IBase64Font {
+  id: string;
+  family: string;
+	subset: string;
+  style: string;
+  weight: string;
+  base64: string;
 }

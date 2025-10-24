@@ -221,6 +221,157 @@ Returns a font with urls to the actual font files google's servers. `subsets` is
 
 Download a zipped archive with all `.eot`, `.woff`, `.woff2`, `.svg`, `.ttf` files of a specified font. The query parameters `formats` and `variants` are optional (includes everything if no filtering is applied). is E.g. `curl -o fontfiles.zip "https://gwfh.mranftl.com/api/fonts/lato?download=zip&subsets=latin,latin-ext&variants=regular,700&formats=woff"` (the double quotes are important as query parameters may else be stripped!)
 
+## Local Font Download API
+
+The following API endpoints allow you to download and serve Google Fonts locally on your server.
+
+### POST `/api/fonts/:id/download`
+
+Downloads a specific Google Font to the local server with the specified configuration.
+
+#### Parameters
+
+- `id` (path parameter) - The font ID (e.g., "roboto", "open-sans")
+
+#### Request Body / Query Parameters
+
+You can pass parameters either in the request body (JSON) or as query parameters:
+
+- `subsets` (optional) - Array of font subsets (e.g., `["latin", "latin-ext"]`)
+- `variants` (optional) - Array of font variants (e.g., `["regular", "700", "italic"]`)
+- `formats` (optional) - Array of font formats (e.g., `["woff2", "woff"]`)
+
+#### Example Requests
+
+**Using JSON body:**
+```bash
+curl -X POST http://localhost:9000/api/fonts/roboto/download \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subsets": ["latin", "latin-ext"],
+    "variants": ["regular", "700"],
+    "formats": ["woff2", "woff"]
+  }'
+```
+
+**Using query parameters:**
+```bash
+curl -X POST "http://localhost:9000/api/fonts/roboto/download?subsets=latin,latin-ext&variants=regular,700&formats=woff2,woff"
+```
+
+#### Response
+
+```json
+{
+  "id": "roboto",
+  "family": "Roboto",
+  "localPath": "/api/fonts/roboto/local",
+  "subsets": ["latin", "latin-ext"],
+  "variants": ["regular", "700"],
+  "formats": ["woff2", "woff"],
+  "downloadedAt": "2025-10-23T12:34:56.789Z"
+}
+```
+
+### GET `/api/fonts/:id/local/:file`
+
+Serves a specific font file or CSS file from the local storage.
+
+#### Parameters
+
+- `id` (path parameter) - The font ID
+- `file` (path parameter) - The file name (e.g., `regular.woff2`, `fonts.css`)
+
+#### Example Requests
+
+**Get the CSS file:**
+```bash
+curl http://localhost:9000/api/fonts/roboto/local/fonts.css
+```
+
+**Get a specific font file:**
+```bash
+curl http://localhost:9000/api/fonts/roboto/local/regular.woff2
+```
+
+### GET `/api/fonts/local`
+
+Returns a list of all fonts that have been downloaded locally.
+
+#### Example Request
+
+```bash
+curl http://localhost:9000/api/fonts/local
+```
+
+#### Response
+
+```json
+[
+  {
+    "id": "roboto",
+    "family": "Roboto",
+    "subsets": ["latin", "latin-ext"],
+    "variants": ["regular", "700"],
+    "path": "/api/fonts/roboto/local"
+  },
+  {
+    "id": "open-sans",
+    "family": "Open Sans",
+    "subsets": ["latin"],
+    "variants": ["regular", "700", "italic"],
+    "path": "/api/fonts/open-sans/local"
+  }
+]
+```
+
+### Usage Example
+
+1. **Download a font:**
+```bash
+curl -X POST http://localhost:9000/api/fonts/roboto/download \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subsets": ["latin"],
+    "variants": ["regular", "700"],
+    "formats": ["woff2"]
+  }'
+```
+
+2. **Include the CSS in your HTML:**
+```html
+<link rel="stylesheet" href="http://localhost:9000/api/fonts/roboto/local/fonts.css">
+```
+
+3. **Use the font in your CSS:**
+```css
+body {
+  font-family: 'Roboto', sans-serif;
+}
+```
+
+### Storage Structure
+
+Downloaded fonts are stored in the following directory structure:
+
+```
+fonts/
+├── roboto/
+│   ├── fonts.css
+│   ├── regular.woff2
+│   └── 700.woff2
+└── open-sans/
+    ├── fonts.css
+    ├── regular.woff2
+    └── italic.woff2
+```
+
+**Notes:**
+- Downloaded fonts are cached on the server. If a file already exists, it won't be downloaded again.
+- The CSS file is automatically generated with proper `@font-face` rules pointing to the local font files.
+- Font files are served with long-term caching headers (1 year) for optimal performance.
+- The `/fonts` directory is automatically ignored by git.
+
 ## History
 
 > 2025:

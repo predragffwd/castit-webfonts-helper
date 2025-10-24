@@ -12,7 +12,7 @@ import {
   storeVariantItems,
 } from "./store";
 import { getCachedVariantItems, storeCachedVariantItems } from "./cache";
-import { IFontItem, IFontSubsetArchive, IVariantItem } from "../types";
+import { IFontItem, IFontSubsetArchive, ISubsetMap, IVariantItem } from "../types";
 
 export function loadFontItems(): IFontItem[] {
   return getStoredFontItems();
@@ -79,9 +79,6 @@ const _loadFontSubsetArchive = synchronizedBy(async function (
 
   return fontSubsetArchive;
 });
-export interface ISubsetMap {
-  [subset: string]: boolean;
-}
 
 export function loadSubsetMap(fontBundle: IFontBundle): ISubsetMap {
   return _.reduce(

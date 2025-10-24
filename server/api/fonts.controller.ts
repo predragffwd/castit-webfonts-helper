@@ -4,8 +4,19 @@ import * as https from "https";
 import * as JSZip from "jszip";
 import * as _ from "lodash";
 import * as path from "path";
+import { generateBase64Path, getFontBase64Cache, setFontBase64Cache } from "../logic/cache";
 import { loadFontBundle, loadFontItems, loadFontSubsetArchive, loadSubsetMap, loadVariantItems } from "../logic/core";
-import { IAPIFont, IAPIListFont, IDownloadFontRequest, IDownloadFontResponse, IFontSubsetArchive, ILocalFont, IUserAgents, IVariantItem } from "../types";
+import {
+  IAPIFont,
+  IAPIListFont,
+  IBase64Font,
+  IDownloadFontRequest,
+  IDownloadFontResponse,
+  IFontSubsetArchive,
+  ILocalFont,
+  IUserAgents,
+  IVariantItem,
+} from "../types";
 
 // Get list of fonts
 // /api/fonts
@@ -411,7 +422,7 @@ export async function getLocalFonts(req: Request, res: Response<ILocalFont[]>, n
  * @param res
  * @param next
  */
-export async function getFontBase64Data(req: Request, res: Response<IAPIFont | string | NodeJS.WritableStream>, next: NextFunction) {
+export async function getFontBase64Data(req: Request, res: Response<string>, next: NextFunction) {
   // get the variant string
   // e.g. "subset=latin,latin-ext," will be transformed into ["latin","latin-ext"] (non whitespace arrays)
   const subsets = _.isString(req.query.subsets) ? _.without(req.query.subsets.split(/[,]+/), "") : null;
@@ -420,15 +431,12 @@ export async function getFontBase64Data(req: Request, res: Response<IAPIFont | s
     return res.status(400).send("Bad Request - missing variant query parameter");
   }
 
-  const weight = _.isString(req.query.weight) ? req.query.weight : null;
-  if (_.isNil(weight)) {
-    return res.status(400).send("Bad Request - missing weight query parameter");
+  const variants = _.isString(req.query.variants) ? _.without(req.query.variants.split(/[,]+/), "") : null;
+  if (_.isNil(variants)) {
+    return res.status(400).send("Bad Request - missing variants query parameter");
   }
 
-  const style = _.isString(req.query.style) ? req.query.style : null;
-  if (_.isNil(style)) {
-    return res.status(400).send("Bad Request - missing style query parameter");
-  }
+  const format = _.isString(req.query.format) ? req.query.format : null;
 
   const fontBundle = await loadFontBundle(req.params.id, subsets);
 
@@ -437,16 +445,17 @@ export async function getFontBase64Data(req: Request, res: Response<IAPIFont | s
   }
 
   const subsetMap = loadSubsetMap(fontBundle);
-	if (_.isNil(subsetMap)) {
-		return res.status(404).send("No subsets found for this font.");
-	}
+  if (_.isNil(subsetMap)) {
+    return res.status(404).send("No subsets found for this font.");
+  }
 
-	// check if requested subsets are valid
-	for(const subset of subsets) {
-		if(!subsetMap[subset]) {
-			return res.status(400).send(`Bad Request - subset '${subset}' is not available for font '${req.params.id}'`);
-		}
-	}
+  // check if requested subsets are valid
+  for (const subset of subsets) {
+    if (!subsetMap[subset]) {
+      // remove invalid subset from the list
+      subsets.splice(subsets.indexOf(subset), 1);
+    }
+  }
 
   const variantItems = await loadVariantItems(fontBundle);
 
@@ -454,9 +463,73 @@ export async function getFontBase64Data(req: Request, res: Response<IAPIFont | s
     return res.status(404).send("No variants found for this font.");
   }
 
-	// const matchedVariant = _.find(variantItems, (variant) => {
-	// 	return variant.weight === weight && variant.style === style;
-	// });
+  // const matchedVariant = _.find(variantItems, (variant) => {
+  // 	return variant.weight === weight && variant.style === style;
+  // });
 
-  const a = "b";
+  const matchedVariants: IVariantItem[] = [];
+  for (const variant of variantItems) {
+    if (variant.id && variants.includes(variant.id)) {
+      matchedVariants.push(variant);
+    }
+  }
+
+  if (!matchedVariants || matchedVariants.length === 0) {
+    return res.status(404).send("Variant not found.");
+  }
+
+  let fontFormatPriority = ["woff2", "woff", "ttf", "eot", "svg"];
+  if (format) {
+    fontFormatPriority = [format];
+  }
+  const fontsToReturn: IBase64Font[] = [];
+  // return base64 data for each url in matchedVariant
+  for (const matchedVariant of matchedVariants) {
+    // pick the best format available based on priority
+    let bestUrlInfo = null;
+    for (const format of fontFormatPriority) {
+      const urlInfo = _.find(matchedVariant.urls, (u) => u.format === format);
+      if (urlInfo) {
+        bestUrlInfo = urlInfo;
+        break;
+      }
+    }
+
+    if (!bestUrlInfo) {
+      return res.status(500).send(`No valid font URL found for variant ${matchedVariant.id}`);
+    }
+
+    const base64Path = await generateBase64Path(fontBundle, matchedVariant, bestUrlInfo, subsets);
+
+    let base64 = await getFontBase64Cache(base64Path);
+
+    if (!base64) {
+      try {
+        const response = await fetch(bestUrlInfo.url);
+        if (!response.ok) {
+          return res.status(500).send(`Failed to fetch font file from ${bestUrlInfo.url}`);
+        }
+
+        base64 = await setFontBase64Cache(bestUrlInfo, response, base64Path);
+      } catch (e: any) {
+        return res.status(500).send(`Error fetching font file from ${bestUrlInfo.url}: ${e.message}`);
+      }
+    }
+
+    if (!base64) {
+      return res.status(500).send(`Failed to get base64 data for font from ${bestUrlInfo.url}`);
+    }
+
+    fontsToReturn.push({
+      id: matchedVariant.id,
+      family: matchedVariant.fontFamily || fontBundle.font.family,
+      // all subsets separated by comma
+      subset: fontBundle.subsets.join(","),
+      style: matchedVariant.fontStyle || "normal",
+      weight: matchedVariant.fontWeight || "400",
+      base64: base64,
+    });
+  }
+
+  res.set("Content-Type", "application/json").send(JSON.stringify(fontsToReturn));
 }

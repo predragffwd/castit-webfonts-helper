@@ -74,6 +74,7 @@
     "grunt-ng-annotate": "^0.2.3",
     "grunt-nodemon": "0.4.2",
     "grunt-rev": "~0.1.0",
+    "nodemon": "^3.0.1",
     "grunt-svgmin": "~0.4.0",
     "grunt-ts": "^6.0.0-beta.22",
     "grunt-usemin": "~2.1.1",
@@ -92,6 +93,7 @@
   },
   "scripts": {
     "start": "ts-node server/app.ts",
+    "start:watch": "nodemon --exec \"ts-node server/app.ts\" --watch server --ext ts,js",
     "lint": "eslint --ext .ts .",
     "build": "node node_modules/grunt-cli/bin/grunt build",
     "test": "node node_modules/grunt-cli/bin/grunt test",

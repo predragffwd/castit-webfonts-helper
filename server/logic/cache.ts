@@ -2,8 +2,8 @@ import { access, mkdir, readdir, readFile, rmdir, stat, writeFile } from "fs/pro
 import * as _ from "lodash";
 import { dirname, join } from "path";
 import { config } from "../config";
+import { IFontItem, IVariantItem, IVariantURL } from "../types";
 import { IFontBundle } from "./store";
-import { IFontItem, IVariantItem } from "../types";
 
 const CACHE_SUBDIR = "variants";
 
@@ -13,8 +13,8 @@ const CACHE_SUBDIR = "variants";
  */
 function getCacheFilePath(storeID: string): string {
   const fontNameAndVersion = storeID.split("__")[0];
-  const fontName = fontNameAndVersion.split("@v")[0];
-  const version = fontNameAndVersion.split("@v")[1] || "1";
+  const fontName = fontNameAndVersion.split("@")[0];
+  const version = fontNameAndVersion.split("@")[1] || "1";
   return join(config.CACHE_DIR, CACHE_SUBDIR, fontName, version, `${storeID}.json`);
 }
 
@@ -114,14 +114,13 @@ export async function clearVariantItemsCache(): Promise<void> {
 export async function cleanOutdatedVariantItemsCache(fontMap: Map<string, IFontItem>): Promise<void> {
   // read all files from the cache directory
   const cacheDir = join(config.CACHE_DIR, CACHE_SUBDIR);
-	// ensure cache directory exists
-	await mkdir(cacheDir, { recursive: true });	
+  // ensure cache directory exists
+  await mkdir(cacheDir, { recursive: true });
 
   // fonts cached files are store under logic/cachedFonts/variants/{fontID@v{version}__{subsets}.json
   const cachedFonts = await getCachedFontVersion(cacheDir);
 
   for (const fontID in cachedFonts) {
-    console.log(fontID);
     const currentVersion = cachedFonts[fontID];
 
     // check in fontMap if the fontID exists and get its latest version
@@ -133,8 +132,7 @@ export async function cleanOutdatedVariantItemsCache(fontMap: Map<string, IFontI
     }
 
     // font exists, check its version (v{version_number}) and remove outdated ones
-    const latestVersion = fontItem.version.replace("v", "");
-    if (latestVersion !== currentVersion) {
+    if (fontItem.version !== currentVersion) {
       // remove all versions that are not the latest
       rmdir(join(cacheDir, fontID), { recursive: true });
     }
@@ -172,11 +170,11 @@ async function getCachedFontVersion(dir: string, folders: Record<string, any> = 
     for (const entry of entries) {
       const fullPath = join(dir, entry);
       const entryStat = await stat(fullPath);
-			let version: string;
+      let version: string;
 
       if (entryStat.isDirectory()) {
         const subDir = await readdir(fullPath);
-				version = subDir.length === 0 ? "-1" : subDir[0];
+        version = subDir.length === 0 ? "-1" : subDir[0];
         pathArr[entry] = version;
       } else {
         // just skip, we only need directories to determine versions
@@ -188,4 +186,41 @@ async function getCachedFontVersion(dir: string, folders: Record<string, any> = 
   }
 
   return pathArr;
+}
+
+export async function generateBase64Path(
+  fontBundle: IFontBundle,
+  variant: IVariantItem,
+  urlInfo: IVariantURL,
+  subsets: string[]
+): Promise<string> {
+  const subsetsStr = subsets.join("_");
+  const base64Name = `${fontBundle.font.id}@${fontBundle.font.version}__${subsetsStr}__${variant.id}_${urlInfo.format}.base64`;
+
+  return join(config.CACHE_DIR, CACHE_SUBDIR, fontBundle.font.id, fontBundle.font.version, base64Name);
+}
+
+export async function getFontBase64Cache(base64Path: string): Promise<string | null> {
+  try {
+    if (!(await cacheFileExists(base64Path))) {
+      return null;
+    }
+
+    const base64Data = await readFile(base64Path, "utf-8");
+    return base64Data;
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function setFontBase64Cache(urlInfo: IVariantURL, response: Response, base64Path: string): Promise<string | null> {
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const base64Data = buffer.toString("base64");
+  const base64 = `data:font/${urlInfo.format};base64,${base64Data}`;
+
+  // save to cache folder
+  await writeFile(base64Path, base64, "utf-8");
+
+  return Promise.resolve(base64);
 }

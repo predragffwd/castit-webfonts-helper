@@ -28,6 +28,27 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Debug Server (Watch)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start:watch"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "sourceMaps": true,
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Debug Server (Attach)",
       "runtimeExecutable": "node",
       "runtimeArgs": [
