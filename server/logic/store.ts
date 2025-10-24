@@ -1,10 +1,9 @@
 import { mkdir } from "fs/promises";
 import * as _ from "lodash";
 import { config } from "../config";
-import { IFontSubsetArchive } from "./fetchFontSubsetArchive";
-import { IVariantItem } from "./fetchFontURLs";
-import { fetchGoogleFonts, IFontItem } from "./fetchGoogleFonts";
+import { fetchGoogleFonts } from "./fetchGoogleFonts";
 import { cleanOutdatedVariantItemsCache } from "./cache";
+import { IFontItem, IFontSubsetArchive, IVariantItem } from "../types";
 
 // FontBundle holds:
 // * the found stored font from google,

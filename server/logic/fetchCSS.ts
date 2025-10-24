@@ -1,19 +1,11 @@
 import * as css from "css";
 import * as _ from "lodash";
-import { IUserAgents } from "../config";
 import { asyncRetry } from "../utils/asyncRetry";
 import axios from "axios";
+import { IResource, IUserAgents } from "../types";
 
 const RETRIES = 2;
 const REQUEST_TIMEOUT_MS = 6000;
-
-interface IResource {
-  src: string | null;
-  fontFamily: string | null;
-  fontStyle: string | null;
-  fontWeight: string | null;
-  url: string;
-}
 
 export async function fetchCSS(family: string, cssSubsetString: string, type: keyof IUserAgents, userAgent: string): Promise<IResource[]> {
   const reqPath = `/css?family=${encodeURIComponent(family)}&subset=${cssSubsetString}`;

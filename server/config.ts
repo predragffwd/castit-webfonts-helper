@@ -1,5 +1,6 @@
 import * as _ from "lodash";
 import * as path from "path";
+import { IUserAgents } from "./types";
 
 const env = process.env.NODE_ENV || "development";
 
@@ -9,14 +10,6 @@ if (!_.isString(GOOGLE_FONTS_API_KEY) || _.isEmpty(GOOGLE_FONTS_API_KEY)) {
   console.error('Error: ENV var "GOOGLE_FONTS_API_KEY" must be set!');
   console.error("See https://developers.google.com/fonts/docs/developer_api");
   process.exit(1);
-}
-
-export interface IUserAgents {
-  eot: string;
-  woff: string;
-  woff2: string;
-  svg: string;
-  ttf: string;
 }
 
 export const config = {

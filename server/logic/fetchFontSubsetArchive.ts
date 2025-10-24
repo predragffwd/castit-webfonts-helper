@@ -6,23 +6,12 @@ import * as path from "path";
 import { finished } from "stream/promises";
 import { config } from "../config";
 import { asyncRetry } from "../utils/asyncRetry";
-import { IVariantItem } from "./fetchFontURLs";
 import { Readable } from "stream";
 import axios from "axios";
+import { IFontSubsetArchive, IVariantItem } from "../types";
 
 const RETRIES = 2;
 const REQUEST_TIMEOUT_MS = 6000;
-
-export interface IFontSubsetArchive {
-  zipPath: string; // absolute path to the zip file
-  files: IFontFile[];
-}
-
-export interface IFontFile {
-  variant: string;
-  format: string;
-  path: string; // relative path within the zip file
-}
 
 export async function fetchFontSubsetArchive(
   fontID: string,

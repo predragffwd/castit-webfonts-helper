@@ -1,5 +1,5 @@
 import * as express from "express";
-import { getApiFonts, getApiFontsById, downloadFontLocally, serveLocalFont, getLocalFonts } from "./api/fonts.controller";
+import { getApiFonts, getApiFontsById, downloadFontLocally, serveLocalFont, getLocalFonts, getFontBase64Data } from "./api/fonts.controller";
 import { getHealthy } from "./api/healthy.controller";
 import { updateFontCache } from "./api/store.controller";
 
@@ -14,6 +14,8 @@ export function setupRoutes(app: express.Express) {
   app.route("/api/fonts/local").get(getLocalFonts);
 
   app.route("/api/fonts/:id").get(getApiFontsById);
+
+	app.route("/api/fonts/:id/base64").get(getFontBase64Data);
 
   // Download font locally
   app.route("/api/fonts/:id/download").post(downloadFontLocally);

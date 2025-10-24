@@ -1,20 +1,9 @@
 import * as Bluebird from "bluebird";
 import * as _ from "lodash";
-import { config, IUserAgents } from "../config";
+import { config } from "../config";
 import { fetchCSS } from "./fetchCSS";
+import { IUserAgents, IVariantItem } from "../types";
 
-export interface IVariantURL {
-  format: keyof IUserAgents;
-  url: string;
-}
-
-export interface IVariantItem {
-  id: string;
-  fontFamily: null | string;
-  fontStyle: null | string;
-  fontWeight: null | string;
-  urls: IVariantURL[];
-}
 
 const TARGETS = _.map(_.keys(config.USER_AGENTS), (key) => {
   return {

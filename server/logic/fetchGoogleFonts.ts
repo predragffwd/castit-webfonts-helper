@@ -5,40 +5,10 @@ import * as speakingurl from "speakingurl";
 import { config } from "../config";
 import { asyncRetry } from "../utils/asyncRetry";
 import axios from "axios";
+import { IFontItem, IGoogleFontsRes } from "../types";
 
 const RETRIES = 2;
 const REQUEST_TIMEOUT_MS = 10000;
-
-export interface IFontItem {
-  id: string;
-  family: string;
-  subsets: string[];
-  category: string;
-  version: string;
-  lastModified: string;
-  popularity: number;
-  defSubset: string;
-  defVariant: string;
-  variants: string[];
-}
-
-interface IGoogleFontsRes {
-  kind: string;
-  items: IGoogleFontsResItem[];
-}
-
-interface IGoogleFontsResItem {
-  family: string;
-  variants: string[];
-  subsets: string[];
-  version: string;
-  lastModified: string;
-  files: {
-    [key: string]: string;
-  };
-  category: string;
-  kind: "webfonts#webfont";
-}
 
 // build up fonts cache via google API...
 export async function fetchGoogleFonts(sort = "popularity"): Promise<IFontItem[]> {

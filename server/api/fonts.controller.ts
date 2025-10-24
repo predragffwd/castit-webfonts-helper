@@ -4,17 +4,32 @@ import * as https from "https";
 import * as JSZip from "jszip";
 import * as _ from "lodash";
 import * as path from "path";
-import { IUserAgents } from "../config";
 import { loadFontBundle, loadFontItems, loadFontSubsetArchive, loadSubsetMap, loadVariantItems } from "../logic/core";
-import { IFontSubsetArchive } from "../logic/fetchFontSubsetArchive";
-import { IVariantItem } from "../logic/fetchFontURLs";
-import { IAPIFont, IAPIListFont, IDownloadFontRequest, IDownloadFontResponse, ILocalFont } from "../types";
+import { IAPIFont, IAPIListFont, IDownloadFontRequest, IDownloadFontResponse, IFontSubsetArchive, ILocalFont, IUserAgents, IVariantItem } from "../types";
 
 // Get list of fonts
 // /api/fonts
 export async function getApiFonts(req: Request, res: Response<IAPIListFont[]>, next: NextFunction) {
   try {
-    const fonts = loadFontItems();
+    let fonts = loadFontItems();
+
+    const sortOptions = ["popularity", "alphabetical", "newest"];
+    const sort = _.isString(req.query.sort) ? req.query.sort.toLowerCase() : "popularity";
+
+    // sort fonts based on query parameter
+    if (sortOptions.includes(sort)) {
+      switch (sort) {
+        case "popularity":
+          // already sorted by popularity from fetchGoogleFonts
+          break;
+        case "alphabetical":
+          fonts = _.orderBy(fonts, ["family"], ["asc"]);
+          break;
+        case "newest":
+          fonts = _.orderBy(fonts, ["lastModified"], ["desc"]);
+          break;
+      }
+    }
 
     const apiListFonts: IAPIListFont[] = _.map(fonts, (font) => {
       return {
@@ -397,20 +412,51 @@ export async function getLocalFonts(req: Request, res: Response<ILocalFont[]>, n
  * @param next
  */
 export async function getFontBase64Data(req: Request, res: Response<IAPIFont | string | NodeJS.WritableStream>, next: NextFunction) {
-  // get the subset string if it was supplied...
+  // get the variant string
   // e.g. "subset=latin,latin-ext," will be transformed into ["latin","latin-ext"] (non whitespace arrays)
   const subsets = _.isString(req.query.subsets) ? _.without(req.query.subsets.split(/[,]+/), "") : null;
+
+  if (_.isNil(subsets) || subsets.length === 0) {
+    return res.status(400).send("Bad Request - missing variant query parameter");
+  }
+
+  const weight = _.isString(req.query.weight) ? req.query.weight : null;
+  if (_.isNil(weight)) {
+    return res.status(400).send("Bad Request - missing weight query parameter");
+  }
+
+  const style = _.isString(req.query.style) ? req.query.style : null;
+  if (_.isNil(style)) {
+    return res.status(400).send("Bad Request - missing style query parameter");
+  }
 
   const fontBundle = await loadFontBundle(req.params.id, subsets);
 
   if (_.isNil(fontBundle)) {
-    return res.status(404).send("Not found");
+    return res.status(404).send("Font not found.");
   }
 
   const subsetMap = loadSubsetMap(fontBundle);
+	if (_.isNil(subsetMap)) {
+		return res.status(404).send("No subsets found for this font.");
+	}
+
+	// check if requested subsets are valid
+	for(const subset of subsets) {
+		if(!subsetMap[subset]) {
+			return res.status(400).send(`Bad Request - subset '${subset}' is not available for font '${req.params.id}'`);
+		}
+	}
+
   const variantItems = await loadVariantItems(fontBundle);
 
   if (_.isNil(variantItems)) {
-    return res.status(404).send("Not found");
+    return res.status(404).send("No variants found for this font.");
   }
+
+	// const matchedVariant = _.find(variantItems, (variant) => {
+	// 	return variant.weight === weight && variant.style === style;
+	// });
+
+  const a = "b";
 }

@@ -2,9 +2,8 @@ import { access, mkdir, readdir, readFile, rmdir, stat, writeFile } from "fs/pro
 import * as _ from "lodash";
 import { dirname, join } from "path";
 import { config } from "../config";
-import { IVariantItem } from "./fetchFontURLs";
-import { IFontItem } from "./fetchGoogleFonts";
 import { IFontBundle } from "./store";
+import { IFontItem, IVariantItem } from "../types";
 
 const CACHE_SUBDIR = "variants";
 

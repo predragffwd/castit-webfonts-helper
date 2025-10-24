@@ -1,8 +1,7 @@
 import * as _ from "lodash";
 import { synchronizedBy } from "../utils/synchronized";
-import { fetchFontSubsetArchive, IFontSubsetArchive } from "./fetchFontSubsetArchive";
-import { fetchFontURLs, IVariantItem } from "./fetchFontURLs";
-import { IFontItem } from "./fetchGoogleFonts";
+import { fetchFontSubsetArchive } from "./fetchFontSubsetArchive";
+import { fetchFontURLs } from "./fetchFontURLs";
 import {
   getFontBundle,
   getStoredFontItems,
@@ -13,6 +12,7 @@ import {
   storeVariantItems,
 } from "./store";
 import { getCachedVariantItems, storeCachedVariantItems } from "./cache";
+import { IFontItem, IFontSubsetArchive, IVariantItem } from "../types";
 
 export function loadFontItems(): IFontItem[] {
   return getStoredFontItems();
