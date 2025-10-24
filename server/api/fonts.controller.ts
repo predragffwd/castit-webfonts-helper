@@ -1,28 +1,17 @@
 import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
+import * as https from "https";
 import * as JSZip from "jszip";
 import * as _ from "lodash";
 import * as path from "path";
-import * as https from "https";
 import { IUserAgents } from "../config";
 import { loadFontBundle, loadFontItems, loadFontSubsetArchive, loadSubsetMap, loadVariantItems } from "../logic/core";
 import { IFontSubsetArchive } from "../logic/fetchFontSubsetArchive";
 import { IVariantItem } from "../logic/fetchFontURLs";
+import { IAPIFont, IAPIListFont, IDownloadFontRequest, IDownloadFontResponse, ILocalFont } from "../types";
 
 // Get list of fonts
 // /api/fonts
-interface IAPIListFont {
-  id: string;
-  family: string;
-  variants: string[];
-  subsets: string[];
-  category: string;
-  version: string;
-  lastModified: string; // e.g. 2022-09-22
-  popularity: number;
-  defSubset: string;
-  defVariant: string;
-}
 export async function getApiFonts(req: Request, res: Response<IAPIListFont[]>, next: NextFunction) {
   try {
     const fonts = loadFontItems();
@@ -50,32 +39,6 @@ export async function getApiFonts(req: Request, res: Response<IAPIListFont[]>, n
 
 // Get specific fonts (fixed charsets) including links
 // /api/fonts/:id
-interface IAPIFont {
-  id: string;
-  family: string;
-  subsets: string[];
-  category: string;
-  version: string;
-  lastModified: string; // e.g. 2022-09-22
-  popularity: number;
-  defSubset: string;
-  defVariant: string;
-  subsetMap: {
-    [subset: string]: boolean;
-  };
-  storeID: string;
-  variants: {
-    id: string;
-    fontFamily: string | null;
-    fontStyle: string | null;
-    fontWeight: string | null;
-    eot?: string;
-    woff?: string;
-    woff2?: string;
-    svg?: string;
-    ttf?: string;
-  }[];
-}
 export async function getApiFontsById(req: Request, res: Response<IAPIFont | string | NodeJS.WritableStream>, next: NextFunction) {
   try {
     // get the subset string if it was supplied...
@@ -198,22 +161,6 @@ function loadZipArchive(zipPath: string): PromiseLike<JSZip> {
 
 // Download fonts locally
 // POST /api/fonts/:id/download
-interface IDownloadFontRequest {
-  subsets?: string[];
-  variants?: string[];
-  formats?: string[];
-}
-
-interface IDownloadFontResponse {
-  id: string;
-  family: string;
-  localPath: string;
-  subsets: string[];
-  variants: string[];
-  formats: string[];
-  downloadedAt: string;
-}
-
 export async function downloadFontLocally(
   req: Request<{ id: string }, IDownloadFontResponse, IDownloadFontRequest>,
   res: Response<IDownloadFontResponse | string>,
@@ -239,7 +186,7 @@ export async function downloadFontLocally(
 
     // Create directory structure: fonts/{fontId}
     const localFontDir = path.join(process.cwd(), "fonts", fontId);
-    
+
     if (!fs.existsSync(localFontDir)) {
       fs.mkdirSync(localFontDir, { recursive: true });
     }
@@ -261,7 +208,7 @@ export async function downloadFontLocally(
       for (const urlInfo of filteredUrls) {
         const fileName = `${variant.id}.${urlInfo.format}`;
         const filePath = path.join(localFontDir, fileName);
-        
+
         downloadPromises.push(
           downloadFile(urlInfo.url, filePath).then(() => {
             downloadedFiles.push(fileName);
@@ -295,11 +242,7 @@ export async function downloadFontLocally(
 
 // Serve local fonts
 // GET /api/fonts/:id/local/:file
-export async function serveLocalFont(
-  req: Request<{ id: string; file: string }>,
-  res: Response,
-  next: NextFunction
-) {
+export async function serveLocalFont(req: Request<{ id: string; file: string }>, res: Response, next: NextFunction) {
   try {
     const { id, file } = req.params;
     const filePath = path.join(process.cwd(), "fonts", id, file);
@@ -320,10 +263,10 @@ export async function serveLocalFont(
     };
 
     const contentType = contentTypes[ext] || "application/octet-stream";
-    
+
     res.setHeader("Content-Type", contentType);
     res.setHeader("Cache-Control", "public, max-age=31536000"); // Cache for 1 year
-    
+
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
   } catch (e) {
@@ -340,36 +283,34 @@ function downloadFile(url: string, filePath: string): Promise<void> {
     }
 
     const file = fs.createWriteStream(filePath);
-    
-    https.get(url, (response) => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`Failed to download: ${url}, status: ${response.statusCode}`));
-        return;
-      }
 
-      response.pipe(file);
+    https
+      .get(url, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`Failed to download: ${url}, status: ${response.statusCode}`));
+          return;
+        }
 
-      file.on("finish", () => {
-        file.close();
-        resolve();
+        response.pipe(file);
+
+        file.on("finish", () => {
+          file.close();
+          resolve();
+        });
+      })
+      .on("error", (err) => {
+        fs.unlink(filePath, () => {
+          // Ignore unlink errors
+        });
+        reject(err);
       });
-    }).on("error", (err) => {
-      fs.unlink(filePath, () => {
-        // Ignore unlink errors
-      });
-      reject(err);
-    });
   });
 }
 
 // Helper function to generate CSS with @font-face rules
-function generateFontFaceCSS(
-  variants: IVariantItem[],
-  fontFamily: string,
-  formats: string[] | null
-): string {
+function generateFontFaceCSS(variants: IVariantItem[], fontFamily: string, formats: string[] | null): string {
   const selectedFormats = formats || ["woff2", "woff"];
-  
+
   const fontFaces = _.map(variants, (variant) => {
     const sources = _.map(variant.urls, (url) => {
       if (!_.includes(selectedFormats, url.format)) {
@@ -401,18 +342,10 @@ function generateFontFaceCSS(
 
 // Get list of locally downloaded fonts
 // GET /api/fonts/local
-interface ILocalFont {
-  id: string;
-  family: string;
-  subsets: string[];
-  variants: string[];
-  path: string;
-}
-
 export async function getLocalFonts(req: Request, res: Response<ILocalFont[]>, next: NextFunction) {
   try {
     const fontsDir = path.join(process.cwd(), "fonts");
-    
+
     if (!fs.existsSync(fontsDir)) {
       return res.json([]);
     }
@@ -423,15 +356,16 @@ export async function getLocalFonts(req: Request, res: Response<ILocalFont[]>, n
     for (const fontId of fontDirs) {
       const fontPath = path.join(fontsDir, fontId);
       const stat = fs.statSync(fontPath);
-      
+
       if (!stat.isDirectory()) {
         continue;
       }
 
       const files = fs.readdirSync(fontPath);
-      
-      const fontFiles = _.filter(files, (f) => 
-        f.endsWith(".woff") || f.endsWith(".woff2") || f.endsWith(".ttf") || f.endsWith(".eot") || f.endsWith(".svg")
+
+      const fontFiles = _.filter(
+        files,
+        (f) => f.endsWith(".woff") || f.endsWith(".woff2") || f.endsWith(".ttf") || f.endsWith(".eot") || f.endsWith(".svg")
       );
 
       const variants = _.uniq(_.map(fontFiles, (f) => f.split(".")[0]));
@@ -452,5 +386,31 @@ export async function getLocalFonts(req: Request, res: Response<ILocalFont[]>, n
     return res.json(localFonts);
   } catch (e) {
     next(e);
+  }
+}
+
+/**
+ * Get the base64 data for a font id
+ *
+ * @param req
+ * @param res
+ * @param next
+ */
+export async function getFontBase64Data(req: Request, res: Response<IAPIFont | string | NodeJS.WritableStream>, next: NextFunction) {
+  // get the subset string if it was supplied...
+  // e.g. "subset=latin,latin-ext," will be transformed into ["latin","latin-ext"] (non whitespace arrays)
+  const subsets = _.isString(req.query.subsets) ? _.without(req.query.subsets.split(/[,]+/), "") : null;
+
+  const fontBundle = await loadFontBundle(req.params.id, subsets);
+
+  if (_.isNil(fontBundle)) {
+    return res.status(404).send("Not found");
+  }
+
+  const subsetMap = loadSubsetMap(fontBundle);
+  const variantItems = await loadVariantItems(fontBundle);
+
+  if (_.isNil(variantItems)) {
+    return res.status(404).send("Not found");
   }
 }

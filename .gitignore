@@ -13,3 +13,7 @@ npm-debug.log
 tscommand-
 /tmp
 /fonts
+# Cache directories
+cache/
+# or if you want to be more specific
+cache/variants/

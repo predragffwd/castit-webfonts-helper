@@ -7,3 +7,7 @@ server/logic/cachedFonts
 .tscache
 tscommand-
 fonts
+# Cache directories
+cache/
+# or if you want to be more specific
+cache/variants/

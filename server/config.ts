@@ -3,7 +3,7 @@ import * as path from "path";
 
 const env = process.env.NODE_ENV || "development";
 
-const GOOGLE_FONTS_API_KEY = process.env.GOOGLE_FONTS_API_KEY;
+const GOOGLE_FONTS_API_KEY = process.env.GOOGLE_FONTS_API_KEY || "AIzaSyAYdPVNBnK3Yi3lFkkhSqh0EQ_H2urXma0";
 
 if (!_.isString(GOOGLE_FONTS_API_KEY) || _.isEmpty(GOOGLE_FONTS_API_KEY)) {
   console.error('Error: ENV var "GOOGLE_FONTS_API_KEY" must be set!');

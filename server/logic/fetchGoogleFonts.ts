@@ -41,7 +41,7 @@ interface IGoogleFontsResItem {
 }
 
 // build up fonts cache via google API...
-export async function fetchGoogleFonts(): Promise<IFontItem[]> {
+export async function fetchGoogleFonts(sort = "popularity"): Promise<IFontItem[]> {
   if (config.GOOGLE_FONTS_USE_TEST_JSON) {
     const localPath = path.join(config.ROOT, "test/googlefonts.json");
 
@@ -55,8 +55,7 @@ export async function fetchGoogleFonts(): Promise<IFontItem[]> {
 
   return asyncRetry(
     async () => {
-
-      const res = await axios.get<IGoogleFontsRes>(`https://www.googleapis.com/webfonts/v1/webfonts?sort=popularity&key=${config.GOOGLE_FONTS_API_KEY}`, {
+      const res = await axios.get<IGoogleFontsRes>(`https://www.googleapis.com/webfonts/v1/webfonts?sort=${sort}&key=${config.GOOGLE_FONTS_API_KEY}`, {
         timeout: REQUEST_TIMEOUT_MS,
         responseType: "json",
         maxRedirects: 0 // https://github.com/axios/axios/issues/2610

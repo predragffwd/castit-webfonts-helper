@@ -12,6 +12,7 @@ import {
   storeFontSubsetArchive,
   storeVariantItems,
 } from "./store";
+import { getCachedVariantItems, storeCachedVariantItems } from "./cache";
 
 export function loadFontItems(): IFontItem[] {
   return getStoredFontItems();
@@ -31,6 +32,14 @@ const _loadVariantItems = synchronizedBy(async function (fontBundle: IFontBundle
     return storedVariantItems;
   }
 
+    // check if the font is cached on the file system
+    const cachedVariantItems = await getCachedVariantItems(fontBundle);
+    if (!_.isNil(cachedVariantItems)) {
+        // Store in memory cache for faster subsequent access
+        storeVariantItems(fontBundle, cachedVariantItems);
+        return cachedVariantItems;
+    }
+
   const { storeID, font, subsets } = fontBundle;
   const variantItems = await fetchFontURLs(font.family, font.variants, subsets);
 
@@ -39,8 +48,9 @@ const _loadVariantItems = synchronizedBy(async function (fontBundle: IFontBundle
     return null;
   }
 
-  // SIDE-EFFECT!
+  // SIDE-EFFECT! Store in both memory and file system cache
   storeVariantItems(fontBundle, variantItems);
+  await storeCachedVariantItems(fontBundle, variantItems);
 
   return variantItems;
 });

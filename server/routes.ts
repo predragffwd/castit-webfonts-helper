@@ -1,6 +1,7 @@
 import * as express from "express";
 import { getApiFonts, getApiFontsById, downloadFontLocally, serveLocalFont, getLocalFonts } from "./api/fonts.controller";
 import { getHealthy } from "./api/healthy.controller";
+import { updateFontCache } from "./api/store.controller";
 
 export function setupRoutes(app: express.Express) {
   app.use("/fonts", express.static(app.get("appPath") + "/index.html"));
@@ -21,6 +22,8 @@ export function setupRoutes(app: express.Express) {
   app.route("/api/fonts/:id/local/:file").get(serveLocalFont);
 
   app.route("/-/healthy").get(getHealthy);
+
+	app.route("/api/update-cache").get(updateFontCache);
 
   // All undefined asset or api routes should return a 404
   app.route("/:url(-|api|auth|components|app|bower_components|assets)/*").get(function (req, res) {
