@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { cleanOutdatedVariantItemsCache } from "../logic/cache";
 import { reinitStore } from "../logic/store";
 
 export async function updateFontCache(req: Request, res: Response<string>, next: NextFunction) {

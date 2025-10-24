@@ -4,6 +4,7 @@ import { config } from "../config";
 import { IFontSubsetArchive } from "./fetchFontSubsetArchive";
 import { IVariantItem } from "./fetchFontURLs";
 import { fetchGoogleFonts, IFontItem } from "./fetchGoogleFonts";
+import { cleanOutdatedVariantItemsCache } from "./cache";
 
 // FontBundle holds:
 // * the found stored font from google,
@@ -26,6 +27,9 @@ export async function initStore() {
   _.each(await fetchGoogleFonts(), (font: IFontItem) => {
     fontMap.set(font.id, font);
   });
+
+  // since we successfully update the cache, let's check cached fonts and cleanup if their versions are outdated
+  await cleanOutdatedVariantItemsCache(fontMap);
 }
 
 export async function reinitStore() {
