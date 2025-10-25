@@ -110,7 +110,7 @@ I provide prebuilt Docker images via [GitHub Packages](https://github.com/majode
 ```bash
 # See https://developers.google.com/fonts/docs/developer_api for creating your own API-Key.
 
-docker run -e GOOGLE_FONTS_API_KEY=<YOUR-API-KEY> -p 8080:8080 ghcr.io/majodev/google-webfonts-helper:<TAG>
+docker run -d --name webfonts-helper -e GOOGLE_FONTS_API_KEY=<API_KEY> -p 8080:8080 -v ghcr.io/predragffwd/castit-webfonts-helper:<TAG>
 # Express server listening on 8080, in production mode
 ```
 
