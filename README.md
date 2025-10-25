@@ -152,11 +152,11 @@ node$ NODE_ENV=production node dist/server/app.js
 If you want to build and run your own **production** container locally:
 ```bash
 # Build the production docker container (final stage)
-docker build -t predragffwd/castit-webfonts-helper:latest -t predragffwd/castit-webfonts-helper:1.1.0 .
+docker build -t predragffwd/castit-webfonts-helper:latest -t predragffwd/castit-webfonts-helper:<TAG> .
 
 # Run it (if you have previously started the development container, halt it!)
 ./docker-helper.sh --halt
-docker run -e GOOGLE_FONTS_API_KEY=<YOUR-API-KEY> -p 8080:8080 <your-image-tag>
+docker run -e GOOGLE_FONTS_API_KEY=<API_KEY> -p 8080:8080 predragffwd/castit-webfonts-helper:<TAG>
 # Express server listening on 8080, in production mode
 ```
 
