@@ -83,6 +83,9 @@ COPY --chown=node:node --from=builder /app/dist /app/dist
 
 ENV NODE_ENV=production
 
+# Create volume mount points
+VOLUME ["/app/fonts", "/app/server/logic/cachedFonts"]
+
 EXPOSE 8080
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node","dist/server/app.js"]

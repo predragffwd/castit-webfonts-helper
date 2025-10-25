@@ -160,6 +160,26 @@ docker run -e GOOGLE_FONTS_API_KEY=<API_KEY> -p 8080:8080 predragffwd/castit-web
 # Express server listening on 8080, in production mode
 ```
 
+### Production Deployment with Persistent Storage
+
+```bash
+# Create persistent storage directories
+mkdir -p ~/webfonts-data/{fonts,cached-fonts,logs}
+
+# Create environment file
+echo "GOOGLE_FONTS_API_KEY=your-api-key-here" > ~/webfonts-data/.env
+
+# Run with persistent volumes
+docker run -d \
+  --name castit-webfonts-helper \
+  --env-file ~/webfonts-data/.env \
+  -p 8080:8080 \
+  -v ~/webfonts-data/downloaded-fonts:/app/fonts \
+  -v ~/webfonts-data/cached-fonts:/app/server/logic/cachedFonts \
+  --restart unless-stopped \
+  ghcr.io/predragffwd/castit-webfonts-helper:1.0.0
+```
+
 ### Using GitHub Container Registry
 1. Create a Personal Access Token:
 Go to GitHub → Settings → Developer settings → Personal access tokens
@@ -174,7 +194,7 @@ docker push ghcr.io/predragffwd/castit-webfonts-helper:1.0.0
 ```
 echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u predragffwd --password-stdin
 docker pull ghcr.io/predragffwd/castit-webfonts-helper:1.0.0
-docker run -d --name webfonts-helper -e GOOGLE_FONTS_API_KEY=your-key -p 8080:8080 -v /path/to/fonts:/app/fonts ghcr.io/predragffwd/castit-webfonts-helper:1.0.0
+docker run -d --name webfonts-helper -e GOOGLE_FONTS_API_KEY=your-key -p 8080:8080 ghcr.io/predragffwd/castit-webfonts-helper:1.0.0
 ```
 
 To mitigate security issues especially with the projects' deprecated dependencies, the final image is based on a minimal container image. It runs rootless and has no development dependencies. 
