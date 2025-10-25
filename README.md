@@ -152,12 +152,29 @@ node$ NODE_ENV=production node dist/server/app.js
 If you want to build and run your own **production** container locally:
 ```bash
 # Build the production docker container (final stage)
-docker build . -t <your-image-tag>
+docker build -t predragffwd/castit-webfonts-helper:latest -t predragffwd/castit-webfonts-helper:1.1.0 .
 
 # Run it (if you have previously started the development container, halt it!)
 ./docker-helper.sh --halt
 docker run -e GOOGLE_FONTS_API_KEY=<YOUR-API-KEY> -p 8080:8080 <your-image-tag>
 # Express server listening on 8080, in production mode
+```
+
+### Using GitHub Container Registry
+1. Create a Personal Access Token:
+Go to GitHub → Settings → Developer settings → Personal access tokens
+Create a token with write:packages permission
+2. Login and push:
+```
+echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u predragffwd --password-stdin
+docker tag predragffwd/castit-webfonts-helper:1.0.0 ghcr.io/predragffwd/castit-webfonts-helper:1.0.0
+docker push ghcr.io/predragffwd/castit-webfonts-helper:1.0.0
+```
+3. On your remote server:
+```
+echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u predragffwd --password-stdin
+docker pull ghcr.io/predragffwd/castit-webfonts-helper:1.0.0
+docker run -d --name webfonts-helper -e GOOGLE_FONTS_API_KEY=your-key -p 8080:8080 -v /path/to/fonts:/app/fonts ghcr.io/predragffwd/castit-webfonts-helper:1.0.0
 ```
 
 To mitigate security issues especially with the projects' deprecated dependencies, the final image is based on a minimal container image. It runs rootless and has no development dependencies. 
@@ -324,6 +341,85 @@ curl http://localhost:9000/api/fonts/local
   }
 ]
 ```
+
+### GET `/api/fonts/:id/base64`
+
+Returns base64-encoded font data for embedding directly in CSS or HTML. This endpoint provides font data as base64 strings that can be used in `data:` URLs for inline font embedding.
+
+#### Parameters
+
+- `id` (path parameter) - The font ID (e.g., "roboto", "open-sans")
+
+#### Query Parameters (all required)
+
+- `subsets` (required) - Comma-separated list of font subsets (e.g., `latin,latin-ext`)
+- `variants` (required) - Comma-separated list of font variants (e.g., `regular,700,italic`)
+- `format` (optional) - Specific font format to return. If not specified, returns the best available format based on priority: `woff2` > `woff` > `ttf` > `eot` > `svg`
+
+#### Example Requests
+
+**Get base64 data for multiple variants:**
+```bash
+curl "http://localhost:9000/api/fonts/roboto/base64?subsets=latin&variants=regular,700"
+```
+
+**Get base64 data for a specific format:**
+```bash
+curl "http://localhost:9000/api/fonts/roboto/base64?subsets=latin,latin-ext&variants=regular&format=woff2"
+```
+
+#### Response
+
+Returns an array of base64-encoded font objects:
+
+```json
+[
+  {
+    "id": "regular",
+    "family": "Roboto",
+    "subset": "latin,latin-ext",
+    "style": "normal",
+    "weight": "400",
+    "base64": "d09GRgABAAAAABSwAAsAAAAAG4QAAQ...truncated_base64_data..."
+  },
+  {
+    "id": "700",
+    "family": "Roboto",
+    "subset": "latin,latin-ext", 
+    "style": "normal",
+    "weight": "700",
+    "base64": "d09GRgABAAAAABTQAAsAAAAAG5QAAQ...truncated_base64_data..."
+  }
+]
+```
+
+#### Response Fields
+
+- `id` - The variant identifier (e.g., "regular", "700", "italic")
+- `family` - The font family name
+- `subset` - Comma-separated list of included font subsets
+- `style` - Font style ("normal", "italic", etc.)
+- `weight` - Font weight ("400", "700", etc.)
+- `base64` - Base64-encoded font data that can be used in CSS `data:` URLs
+
+#### Usage Example
+
+You can use the base64 data directly in CSS:
+
+```css
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  src: url(data:font/woff2;base64,d09GRgABAAAAABSwAAsAAAAAG4QAAQ...);
+}
+```
+
+#### Error Responses
+
+- `400 Bad Request` - Missing required query parameters
+- `404 Not Found` - Font, subset, or variant not found
+- `500 Internal Server Error` - Failed to fetch or process font data
 
 ### Usage Example
 

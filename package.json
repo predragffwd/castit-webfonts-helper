@@ -100,9 +100,5 @@
     "dev": "node node_modules/grunt-cli/bin/grunt serve",
     "tsc": "tsc --noEmit --skipLibCheck"
   },
-  "private": true,
-  "resolutions": {
-    "imagemin-optipng": "git+https://github.com/PruvoNet/imagemin-optipng.git#68dc79939c380fb12a83f7ec7cc5943f9aa41149",
-    "optipng-bin": "git+https://github.com/PruvoNet/optipng-bin.git#ffb7e8f17710428596def1bb832d8e8e3fe382af"
-  }
+  "private": true
 }

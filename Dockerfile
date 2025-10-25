@@ -40,8 +40,8 @@ FROM development AS builder
 
 # install server and bundler deps
 COPY package.json /app/package.json
-COPY yarn.lock /app/yarn.lock
-RUN yarn --pure-lockfile
+COPY package-lock.json* /app/
+RUN npm ci --only=production=false
 
 # install clientside deps (bower is a managed application local dev dep)
 COPY bower.json /app/bower.json
@@ -55,9 +55,7 @@ COPY . /app/
 RUN grunt build
 
 # prepare production node_modules (this cleans up dev deps)
-# https://github.com/vercel/next.js/pull/23056
-# https://github.com/yarnpkg/yarn/issues/6373
-RUN yarn install --production --ignore-scripts --prefer-offline
+RUN npm prune --production
 
 ### -----------------------
 # --- Stage: production
