@@ -1,21 +1,19 @@
-version: "3.8"
-
 services:
   webfonts-helper:
-    image: predragffwd/castit-webfonts-helper:latest
+    image: ghcr.io/predragffwd/castit-webfonts-helper:1.0.1
     container_name: castit-webfonts-helper
     ports:
-      - "8080:8080"
+      - "7080:7080"
     environment:
       - GOOGLE_FONTS_API_KEY=${GOOGLE_FONTS_API_KEY}
       - NODE_ENV=production
     volumes:
       # Volume for your new local font download API
-      - ./fonts:/app/fonts
+      - ./fonts:/server/fonts
       # Volume for cached Google Fonts variants
-      - ./cached-fonts:/app/server/logic/cachedFonts/variants
+      - ./cached-fonts:/server/logic/cachedFonts/variants
       # Optional: Volume for logs
-      - ./logs:/app/logs
+      - ./logs:/server/logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/-/healthy"]

@@ -15,7 +15,7 @@ function getCacheFilePath(storeID: string): string {
   const fontNameAndVersion = storeID.split("__")[0];
   const fontName = fontNameAndVersion.split("@")[0];
   const version = fontNameAndVersion.split("@")[1] || "1";
-  return join(config.CACHE_DIR, CACHE_SUBDIR, fontName, version, `${storeID}.json`);
+  return join(config.LOCAL_CACHE_DIR, CACHE_SUBDIR, fontName, version, `${storeID}.json`);
 }
 
 /**
@@ -68,7 +68,7 @@ export async function getCachedVariantItems({ storeID }: IFontBundle): Promise<I
 export async function storeCachedVariantItems({ storeID }: IFontBundle, variantItems: IVariantItem[]): Promise<void> {
   try {
     const cacheFilePath = getCacheFilePath(storeID);
-    const cacheDir = join(config.CACHE_DIR, CACHE_SUBDIR);
+    const cacheDir = join(config.LOCAL_CACHE_DIR, CACHE_SUBDIR);
 
     // Ensure cache directory exists
     await mkdir(cacheDir, { recursive: true });
@@ -101,7 +101,7 @@ function isValidVariantItemsArray(data: IVariantItem[]): boolean {
 export async function clearVariantItemsCache(): Promise<void> {
   try {
     const { rm } = await import("fs/promises");
-    const cacheDir = join(config.CACHE_DIR, CACHE_SUBDIR);
+    const cacheDir = join(config.LOCAL_CACHE_DIR, CACHE_SUBDIR);
     await rm(cacheDir, { recursive: true, force: true });
   } catch (error) {
     console.error("Error clearing variant items cache:", error);
@@ -113,7 +113,7 @@ export async function clearVariantItemsCache(): Promise<void> {
  */
 export async function cleanOutdatedVariantItemsCache(fontMap: Map<string, IFontItem>): Promise<void> {
   // read all files from the cache directory
-  const cacheDir = join(config.CACHE_DIR, CACHE_SUBDIR);
+  const cacheDir = join(config.LOCAL_CACHE_DIR, CACHE_SUBDIR);
   // ensure cache directory exists
   await mkdir(cacheDir, { recursive: true });
 
@@ -144,7 +144,7 @@ export async function cleanOutdatedVariantItemsCache(fontMap: Map<string, IFontI
  */
 export async function getCacheStats(): Promise<{ cachedVariantFiles: number }> {
   try {
-    const cacheDir = join(config.CACHE_DIR, CACHE_SUBDIR);
+    const cacheDir = join(config.LOCAL_CACHE_DIR, CACHE_SUBDIR);
 
     if (!(await cacheFileExists(cacheDir))) {
       return { cachedVariantFiles: 0 };
@@ -197,7 +197,7 @@ export async function generateBase64Path(
   const subsetsStr = subsets.join("_");
   const base64Name = `${fontBundle.font.id}@${fontBundle.font.version}__${subsetsStr}__${variant.id}_${urlInfo.format}.base64`;
 
-  return join(config.CACHE_DIR, CACHE_SUBDIR, fontBundle.font.id, fontBundle.font.version, base64Name);
+  return join(config.LOCAL_CACHE_DIR, CACHE_SUBDIR, fontBundle.font.id, fontBundle.font.version, base64Name);
 }
 
 export async function getFontBase64Cache(base64Path: string): Promise<string | null> {

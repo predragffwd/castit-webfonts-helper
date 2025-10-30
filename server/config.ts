@@ -19,7 +19,7 @@ export const config = {
   ROOT: path.normalize(__dirname + "/.."),
 
   // Server port
-  PORT: process.env.PORT ? _.parseInt(process.env.PORT) : env === "production" ? 8080 : 9001,
+  PORT: process.env.PORT ? _.parseInt(process.env.PORT) : env === "production" ? 7080 : 9090,
 
   IP: process.env.IP || undefined,
 
@@ -36,6 +36,8 @@ export const config = {
   GOOGLE_FONTS_USE_TEST_JSON: process.env.GOOGLE_FONTS_USE_TEST_JSON === "true" ? true : env === "test" ? true : false, // enabled in test, else default false
 
   CACHE_DIR: process.env.CACHE_DIR || `${path.normalize(__dirname + "/logic")}/cachedFonts`,
+
+	LOCAL_CACHE_DIR: process.env.LOCAL_CACHE_DIR || path.join(__dirname, "..", "cachedFonts"),
 
   USER_AGENTS: <IUserAgents>{
     // see http://www.dvdprojekt.de/category.php?name=Safari for a list of sample user handlers

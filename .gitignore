@@ -17,3 +17,5 @@ tscommand-
 cache/
 # or if you want to be more specific
 cache/variants/
+cachedFonts/
+logs/
