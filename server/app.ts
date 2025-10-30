@@ -27,6 +27,10 @@ const init = (async () => {
   // http://expressjs.com/en/api.html
   app.set("x-powered-by", false);
 
+	// Enable CORS for all origins
+	const cors = require("cors");
+	app.use(cors());
+
   // Parse JSON request bodies
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
