@@ -71,12 +71,16 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends \
     lsof \
     tini \
     && rm -rf /var/lib/apt/lists/*
-	
-# Switch to a non-root user - best practice for running containers
-USER node
 
 # Set working directory
 WORKDIR /app
+
+# Create volume directories with proper permissions BEFORE switching to node user
+RUN mkdir -p /app/dist/server/logic/localCachedFonts/variants \
+    && chown -R node:node /app
+
+# Switch to a non-root user - best practice for running containers
+USER node
 
 # copy prebuilt production node_modules
 COPY --chown=node:node --from=builder /app/node_modules /app/node_modules

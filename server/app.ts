@@ -29,7 +29,7 @@ const init = (async () => {
 
 	// Enable CORS for all origins
 	const cors = require("cors");
-	app.use(cors());
+	app.use(cors({ origin: "*" }));
 
   // Parse JSON request bodies
   app.use(express.json());
