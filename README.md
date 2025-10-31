@@ -184,6 +184,8 @@ docker run -d \
 1. Copy the docker-compose.prod.yml to the server
 2. Run docker up command:
 ```bash
+docker-compose up -d
+or
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
