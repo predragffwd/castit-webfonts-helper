@@ -24,12 +24,24 @@ function getCacheFilePath(storeID: string): string {
 async function cacheFileExists(filePath: string): Promise<boolean> {
   try {
     // First ensure the directory structure exists
-    await mkdir(dirname(filePath), { recursive: true });
+    const dir = dirname(filePath);
+    console.log(`Ensuring directory exists: ${dir}`);
+
+    try {
+      await mkdir(dir, { recursive: true });
+      console.log(`✓ Directory created/verified: ${dir}`);
+    } catch (mkdirError) {
+      console.error(`✗ Failed to create directory ${dir}:`, mkdirError);
+      return false;
+    }
 
     // Then check if the file exists
     await access(filePath);
+    console.log(`✓ Cache file exists: ${filePath}`);
     return true;
-  } catch {
+  } catch (error) {
+    // File doesn't exist, but directory should be created
+    console.log(`Cache file does not exist: ${filePath}`);
     return false;
   }
 }
@@ -42,6 +54,7 @@ export async function getCachedVariantItems({ storeID }: IFontBundle): Promise<I
     const cacheFilePath = getCacheFilePath(storeID);
 
     if (!(await cacheFileExists(cacheFilePath))) {
+      console.warn(`No cached variant items found for storeID=${storeID}. Files not created. Skipping cache read.`);
       return null;
     }
 
@@ -68,16 +81,49 @@ export async function getCachedVariantItems({ storeID }: IFontBundle): Promise<I
 export async function storeCachedVariantItems({ storeID }: IFontBundle, variantItems: IVariantItem[]): Promise<void> {
   try {
     const cacheFilePath = getCacheFilePath(storeID);
-    const cacheDir = join(config.LOCAL_CACHE_DIR, CACHE_SUBDIR);
+    const cacheDir = dirname(cacheFilePath);
 
-    // Ensure cache directory exists
-    await mkdir(cacheDir, { recursive: true });
+    console.log(`Storing cache for storeID=${storeID}`);
+    console.log(`Cache file path: ${cacheFilePath}`);
+    console.log(`Cache directory: ${cacheDir}`);
+
+    // Ensure cache directory exists with detailed logging
+    try {
+      await mkdir(cacheDir, { recursive: true });
+      console.log(`✓ Cache directory created/verified: ${cacheDir}`);
+    } catch (mkdirError) {
+      console.error(`✗ Failed to create cache directory ${cacheDir}:`, mkdirError);
+      throw mkdirError;
+    }
+
+    // Test write permissions before writing the actual file
+    const testFile = join(cacheDir, ".write-test");
+    try {
+      await writeFile(testFile, "test", "utf-8");
+      await readFile(testFile, "utf-8");
+      await import("fs/promises").then((fs) => fs.unlink(testFile));
+      console.log(`✓ Write permissions verified for ${cacheDir}`);
+    } catch (permError) {
+      console.error(`✗ No write permissions for ${cacheDir}:`, permError);
+      throw new Error(`No write permissions for cache directory: ${cacheDir}`);
+    }
 
     // Write variant items to cache file
-    await writeFile(cacheFilePath, JSON.stringify(variantItems, null, 2), "utf-8");
+    const jsonContent = JSON.stringify(variantItems, null, 2);
+    await writeFile(cacheFilePath, jsonContent, "utf-8");
+    console.log(`✓ Successfully cached ${variantItems.length} variants to ${cacheFilePath}`);
+
+    // Verify the file was actually written
+    const verifyContent = await readFile(cacheFilePath, "utf-8");
+    if (verifyContent.length === 0) {
+      throw new Error("Cache file was written but is empty");
+    }
+    console.log(`✓ Cache file verified, size: ${verifyContent.length} bytes`);
   } catch (error) {
-    console.error(`Error storing cached variant items for storeID=${storeID}:`, error);
-    // Don't throw error to avoid breaking the main flow
+    console.error(`✗ Error storing cached variant items for storeID=${storeID}:`, error);
+    console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
+    // Re-throw to make the error visible
+    throw error;
   }
 }
 

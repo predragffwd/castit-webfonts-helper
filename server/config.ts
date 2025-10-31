@@ -19,7 +19,7 @@ export const config = {
   ROOT: path.normalize(__dirname + "/.."),
 
   // Server port
-  PORT: process.env.PORT ? _.parseInt(process.env.PORT) : env === "production" ? 7080 : 9090,
+  PORT: process.env.PORT ? _.parseInt(process.env.PORT) : env === "production" ? 8080 : 8080,
 
   IP: process.env.IP || undefined,
 
@@ -37,7 +37,7 @@ export const config = {
 
   CACHE_DIR: process.env.CACHE_DIR || `${path.normalize(__dirname + "/logic")}/cachedFonts`,
 
-	LOCAL_CACHE_DIR: process.env.LOCAL_CACHE_DIR || path.join(__dirname, "..", "cachedFonts"),
+	LOCAL_CACHE_DIR: process.env.LOCAL_CACHE_DIR || `${path.normalize(__dirname + "/logic")}/localCachedFonts`,
 
   USER_AGENTS: <IUserAgents>{
     // see http://www.dvdprojekt.de/category.php?name=Safari for a list of sample user handlers

@@ -4,6 +4,7 @@ dist
 client/bower_components
 node_modules
 server/logic/cachedFonts
+server/logic/localCachedFonts
 .tscache
 tscommand-
 fonts
@@ -11,5 +12,3 @@ fonts
 cache/
 # or if you want to be more specific
 cache/variants/
-cachedFonts/
-logs/

@@ -156,7 +156,7 @@ docker build -t predragffwd/castit-webfonts-helper:latest -t predragffwd/castit-
 
 # Run it (if you have previously started the development container, halt it!)
 ./docker-helper.sh --halt
-docker run -e GOOGLE_FONTS_API_KEY=<API_KEY> -p 8080:8080 predragffwd/castit-webfonts-helper:<TAG>
+docker run -e GOOGLE_FONTS_API_KEY=<API_KEY> -v ./fonts:/app/fonts -v ./local-fonts:/app/local-fonts -v ./logs:/app/logs -p 8080:8080 predragffwd/castit-webfonts-helper:<TAG>
 # Express server listening on 8080, in production mode
 ```
 
@@ -178,6 +178,13 @@ docker run -d \
   -v ~/webfonts-data/cached-fonts:/app/server/logic/cachedFonts \
   --restart unless-stopped \
   ghcr.io/predragffwd/castit-webfonts-helper:1.0.0
+```
+
+### Run using composer
+1. Copy the docker-compose.prod.yml to the server
+2. Run docker up command:
+```bash
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ### Using GitHub Container Registry

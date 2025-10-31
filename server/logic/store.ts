@@ -21,7 +21,7 @@ const urlMap = new Map<string, IVariantItem[]>();
 const archiveMap = new Map<string, IFontSubsetArchive>();
 
 export async function initStore() {
-  await mkdir(config.CACHE_DIR, { recursive: true });
+  await mkdir(config.LOCAL_CACHE_DIR, { recursive: true });
 
   _.each(await fetchGoogleFonts(), (font: IFontItem) => {
     fontMap.set(font.id, font);

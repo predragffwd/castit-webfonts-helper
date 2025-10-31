@@ -36,7 +36,6 @@ const _loadVariantItems = synchronizedBy(async function (fontBundle: IFontBundle
     const cachedVariantItems = await getCachedVariantItems(fontBundle);
     if (!_.isNil(cachedVariantItems)) {
         // Store in memory cache for faster subsequent access
-        storeVariantItems(fontBundle, cachedVariantItems);
         return cachedVariantItems;
     }
 
@@ -50,7 +49,14 @@ const _loadVariantItems = synchronizedBy(async function (fontBundle: IFontBundle
 
   // SIDE-EFFECT! Store in both memory and file system cache
   storeVariantItems(fontBundle, variantItems);
-  await storeCachedVariantItems(fontBundle, variantItems);
+  try {
+		await storeCachedVariantItems(fontBundle, variantItems);
+	}
+	catch (error) {
+		console.error(`✗ Error storing cached variant items for storeID=${storeID}:`, error);
+		console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
+		// Continue without failing, as the in-memory cache is already updated
+	}
 
   return variantItems;
 });

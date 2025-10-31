@@ -2,7 +2,7 @@
 # --- Stage: development
 # --- Purpose: Local dev environment (no application deps)
 ### -----------------------
-FROM node:22.20.0-trixie AS development
+FROM node:24.11.0-trixie AS development
 
 # Replace shell with bash so we can source files
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
@@ -55,13 +55,13 @@ COPY . /app/
 RUN grunt build
 
 # prepare production node_modules (this cleans up dev deps)
-RUN npm prune --production
+RUN rm -rf node_modules && npm ci --only=production
 
 ### -----------------------
 # --- Stage: production
 # --- Purpose: Final step from a new slim image. this should be a minimal image only housing dist (production service)
 ### -----------------------
-FROM node:22.20.0-trixie AS production
+FROM node:24.11.0-trixie AS production
 
 # https://github.com/nodejs/docker-node/blob/7de353256a35856c788b37c1826331dbba5f0785/docs/BestPractices.md
 # Node.js was not designed to run as PID 1 which leads to unexpected behaviour when running inside of Docker. 
@@ -71,8 +71,11 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends \
     lsof \
     tini \
     && rm -rf /var/lib/apt/lists/*
-
+	
+# Switch to a non-root user - best practice for running containers
 USER node
+
+# Set working directory
 WORKDIR /app
 
 # copy prebuilt production node_modules
@@ -84,7 +87,7 @@ COPY --chown=node:node --from=builder /app/dist /app/dist
 ENV NODE_ENV=production
 
 # Create volume mount points
-VOLUME ["/app/fonts", "/app/server/logic/cachedFonts"]
+VOLUME ["/app/server/logic/localCachedFonts"]
 
 EXPOSE 8080
 ENTRYPOINT ["/usr/bin/tini", "--"]

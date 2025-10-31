@@ -3,6 +3,7 @@ services:
     build:
       context: .
       target: development
+    container_name: dev.fonts.castit.nl
     ports:
       - "9090:9090" # development
       - "7080:7080" # production
@@ -17,12 +18,8 @@ services:
       # https://docs.docker.com/docker-for-mac/osxfs-caching/#delegated
       # the container’s view is authoritative (permit delays before updates on the container appear in the host)
       - .:/app:delegated
-      # Volume for your new local font download API
-      - ./fonts:/app/server/fonts
       # Volume for cached Google Fonts variants
-      - ./cached-fonts:/app/server/cachedFonts/variants
-      # Optional: Volume for logs
-      - ./logs:/app/server/logs
+      - ./server/logic/localCachedFonts:/app/dist/server/logic/localCachedFonts
     environment:
       # Set your key in the .gitignored .env file.
       GOOGLE_FONTS_API_KEY: ${GOOGLE_FONTS_API_KEY}
