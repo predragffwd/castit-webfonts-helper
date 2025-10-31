@@ -1,6 +1,6 @@
 services:
   webfonts-helper:
-    image: ghcr.io/predragffwd/castit-webfonts-helper:latest
+    image: ghcr.io/predragffwd/castit-webfonts-helper:<replace_tag|latest>
     pull_policy: always
     container_name: fonts.castit.nl
     ports:
